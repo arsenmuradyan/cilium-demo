@@ -1,0 +1,45 @@
+defaultVolumeMounts:
+  - name: var-log
+    mountPath: "/var/log/"
+    readOnly: false
+  - name: var-lib
+    mountPath: "/var/lib"
+    readOnly: false
+  - name: procfs
+    mountPath: "/host/proc"
+    readOnly: false
+  - name: sysfs
+    mountPath: "/host/sys"
+    readOnly: false
+customConfig:
+  sinks:
+    kinesis:
+      type: "aws_kinesis_streams"
+      inputs:
+        - "hubble_json_parser"
+      region: "us-east-1"
+      stream_name: "http-logs-stream"
+      encoding:
+        codec: "json"
+  sources:
+    kubernetes_hubble:
+      type: kubernetes_logs
+      extra_label_selector: "app == hubble-stdout-exporter"
+  transforms:
+    hubble_json_parser:
+      inputs:
+        - kubernetes_hubble
+      source: |
+        . = parse_json!(.message)
+      type: remap
+fullNameOverride: vector-agent
+podSecurityContext:
+  fsGroup: 0
+  runAsGroup: 0
+  runAsUser: 0
+role: Agent
+service:
+  enabled: false
+serviceAccount:
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::031229177037:role/vector-kinesis-writer"

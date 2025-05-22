@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: hubble-stdout-http-exporter
+spec:
+  selector:
+    matchLabels:
+      app: hubble-stdout-exporter
+  template:
+    metadata:
+      labels:
+        app: hubble-stdout-exporter
+    spec:
+      containers:
+        - name: hubble
+          image: quay.io/cilium/hubble:latest
+          env:
+            - name: NODE
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          command:
+            - "sh"
+          args:
+            - "-c"
+            - |
+              hubble observe --follow --protocol HTTP -o json --node-name $NODE --server hubble-relay.kube-system.svc:80
+      restartPolicy: Always
